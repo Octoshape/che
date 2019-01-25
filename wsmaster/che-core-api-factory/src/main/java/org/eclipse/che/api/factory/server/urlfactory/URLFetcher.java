@@ -53,16 +53,11 @@ public class URLFetcher {
    *
    * @param url the URL to fetch
    * @return the content of the file
+   * @throws IOException when an error occurs
    */
-  public String fetch(@NotNull final String url) {
+  public String fetch(@NotNull final String url) throws IOException {
     requireNonNull(url, "url parameter can't be null");
-    try {
-      return fetch(new URL(sanitized(url)).openConnection());
-    } catch (IOException e) {
-      // we shouldn't fetch if check is done before
-      LOG.debug("Invalid URL", e);
-      return null;
-    }
+    return fetch(new URL(sanitized(url)).openConnection());
   }
 
   /**
@@ -71,8 +66,9 @@ public class URLFetcher {
    *
    * @param urlConnection the URL connection to fetch
    * @return the content of the file
+   * @throws IOException when an error occurs
    */
-  public String fetch(@NotNull URLConnection urlConnection) {
+  public String fetch(@NotNull URLConnection urlConnection) throws IOException {
     requireNonNull(urlConnection, "urlConnection parameter can't be null");
     final String value;
     try (InputStream inputStream = urlConnection.getInputStream();
@@ -80,10 +76,6 @@ public class URLFetcher {
             new BufferedReader(
                 new InputStreamReader(ByteStreams.limit(inputStream, getLimit()), UTF_8))) {
       value = reader.lines().collect(Collectors.joining("\n"));
-    } catch (IOException e) {
-      // we shouldn't fetch if check is done before
-      LOG.debug("Invalid URL", e);
-      return null;
     }
     return value;
   }

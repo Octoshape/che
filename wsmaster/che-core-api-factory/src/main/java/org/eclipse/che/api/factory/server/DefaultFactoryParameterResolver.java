@@ -13,12 +13,12 @@ package org.eclipse.che.api.factory.server;
 
 import static org.eclipse.che.api.factory.shared.Constants.URL_PARAMETER_NAME;
 
+import java.io.IOException;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.validation.constraints.NotNull;
 import org.eclipse.che.api.core.BadRequestException;
-import org.eclipse.che.api.core.ServerException;
 import org.eclipse.che.api.factory.server.urlfactory.URLFactoryBuilder;
 import org.eclipse.che.api.factory.shared.dto.FactoryDto;
 
@@ -46,10 +46,13 @@ public class DefaultFactoryParameterResolver implements FactoryParametersResolve
    * content.
    *
    * @param factoryParameters map containing factory data parameters provided through URL
+   * @return created factory
+   * @throws IOException when provided URL parameters is incorrect
+   * @throws BadRequestException when data given URL pointing to is invalid
    */
   @Override
   public FactoryDto createFactory(@NotNull final Map<String, String> factoryParameters)
-      throws BadRequestException, ServerException {
+      throws BadRequestException, IOException {
     // create factory from the following devfile location
     return urlFactoryBuilder
         .createFactoryFromDevfile(factoryParameters.get(URL_PARAMETER_NAME), null)

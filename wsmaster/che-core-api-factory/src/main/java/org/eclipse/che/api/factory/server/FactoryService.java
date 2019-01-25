@@ -334,10 +334,15 @@ public class FactoryService extends Service {
     requiredNotNull(parameters, "Factory build parameters");
 
     // search matching resolver and create factory from matching resolver
-    FactoryDto resolvedFactory =
-        factoryParametersResolverHolder
-            .getFactoryParametersResolver(parameters)
-            .createFactory(parameters);
+    FactoryDto resolvedFactory;
+    try {
+      resolvedFactory =
+          factoryParametersResolverHolder
+              .getFactoryParametersResolver(parameters)
+              .createFactory(parameters);
+    } catch (IOException e) {
+      throw new BadRequestException("Unable to resolve factory due to error:" + e.getMessage());
+    }
     if (resolvedFactory == null) {
       throw new BadRequestException(FACTORY_NOT_RESOLVABLE);
     }

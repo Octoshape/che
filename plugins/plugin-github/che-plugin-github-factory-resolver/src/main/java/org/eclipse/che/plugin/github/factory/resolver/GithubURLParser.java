@@ -11,6 +11,7 @@
  */
 package org.eclipse.che.plugin.github.factory.resolver;
 
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -47,7 +48,7 @@ public class GithubURLParser {
     return GITHUB_PATTERN.matcher(url).matches();
   }
 
-  public GithubUrl parse(String url) {
+  public GithubUrl parse(String url) throws IOException {
     // Apply github url to the regexp
     Matcher matcher = GITHUB_PATTERN.matcher(url);
     if (!matcher.matches()) {

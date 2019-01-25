@@ -15,12 +15,13 @@ import static org.eclipse.che.api.factory.shared.Constants.CURRENT_VERSION;
 import static org.eclipse.che.api.factory.shared.Constants.URL_PARAMETER_NAME;
 import static org.eclipse.che.dto.server.DtoFactory.newDto;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.validation.constraints.NotNull;
 import org.eclipse.che.api.core.BadRequestException;
-import org.eclipse.che.api.core.ServerException;
 import org.eclipse.che.api.factory.server.FactoryParametersResolver;
 import org.eclipse.che.api.factory.server.urlfactory.ProjectConfigDtoMerger;
 import org.eclipse.che.api.factory.server.urlfactory.URLFactoryBuilder;
@@ -77,24 +78,24 @@ public class GithubFactoryParametersResolver implements FactoryParametersResolve
    * Create factory object based on provided parameters
    *
    * @param factoryParameters map containing factory data parameters provided through URL
-   * @throws BadRequestException when data are invalid
+   * @throws BadRequestException when data given URL pointing to is invalid
+   * @throws IOException when url provided is invalid
    */
   @Override
   public FactoryDto createFactory(@NotNull final Map<String, String> factoryParameters)
-      throws BadRequestException, ServerException {
+      throws BadRequestException,  IOException {
 
     // no need to check null value of url parameter as accept() method has performed the check
     final GithubUrl githubUrl = githubUrlParser.parse(factoryParameters.get(URL_PARAMETER_NAME));
 
     // create factory from the following location if location exists, else create default factory
-    FactoryDto factory =
+    Optional<FactoryDto> factoryDtoOptional =
         urlFactoryBuilder
-            .createFactoryFromDevfile(githubUrl.devfileFileLocation(), githubUrl::rawFileLocation)
-            .orElseGet(
-                () ->
-                    urlFactoryBuilder
-                        .createFactoryFromJson(githubUrl.factoryFileLocation())
-                        .orElseGet(() -> newDto(FactoryDto.class).withV(CURRENT_VERSION)));
+            .createFactoryFromDevfile(githubUrl.devfileFileLocation(), githubUrl::rawFileLocation);
+    if (!factoryDtoOptional.isPresent()) {
+      factoryDtoOptional = urlFactoryBuilder.createFactoryFromJson(githubUrl.factoryFileLocation());
+    }
+    FactoryDto factory = factoryDtoOptional.orElse(newDto(FactoryDto.class).withV(CURRENT_VERSION));
     // add workspace configuration if not defined
     if (factory.getWorkspace() == null) {
       factory.setWorkspace(

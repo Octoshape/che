@@ -28,6 +28,7 @@ import javax.inject.Singleton;
 import org.eclipse.che.api.core.BadRequestException;
 import org.eclipse.che.api.core.ServerException;
 import org.eclipse.che.api.devfile.model.Devfile;
+import org.eclipse.che.api.devfile.server.DevfileException;
 import org.eclipse.che.api.devfile.server.DevfileFormatException;
 import org.eclipse.che.api.devfile.server.DevfileManager;
 import org.eclipse.che.api.devfile.server.DevfileRecipeFormatException;
@@ -70,11 +71,13 @@ public class URLFactoryBuilder {
    *
    * @param jsonFileLocation location of factory json file
    * @return a factory or null if factory json in not found
+   * @throws ServerException when there is an error of devfile content retrieval
    */
-  public Optional<FactoryDto> createFactoryFromJson(String jsonFileLocation) {
+  public Optional<FactoryDto> createFactoryFromJson(String jsonFileLocation) throws IOException {
     // Check if there is factory json file inside the repository
     if (jsonFileLocation != null) {
-      final String factoryJsonContent = urlFetcher.fetch(jsonFileLocation);
+      final String factoryJsonContent;
+      factoryJsonContent = urlFetcher.fetch(jsonFileLocation);
       if (!isNullOrEmpty(factoryJsonContent)) {
         return Optional.of(
             DtoFactory.getInstance().createDtoFromJson(factoryJsonContent, FactoryDto.class));
@@ -89,18 +92,20 @@ public class URLFactoryBuilder {
    * @param devfileLocation location of devfile
    * @param fileUrlProvider optional service-specific provider of URL's to the file raw content
    * @return a factory or null if devfile is not found
+   * @throws ServerException when there is an error of devfile content retrieval
+   * @throws BadRequestException when creating from given devfile is factory failed
    */
   public Optional<FactoryDto> createFactoryFromDevfile(
       String devfileLocation, @Nullable Function<String, String> fileUrlProvider)
-      throws BadRequestException, ServerException {
+      throws BadRequestException, IOException {
     if (devfileLocation == null) {
       return Optional.empty();
     }
-    final String devfileYamlContent = urlFetcher.fetch(devfileLocation);
-    if (isNullOrEmpty(devfileYamlContent)) {
-      return Optional.empty();
-    }
     try {
+      final String devfileYamlContent = urlFetcher.fetch(devfileLocation);
+      if (isNullOrEmpty(devfileYamlContent)) {
+        return Optional.empty();
+      }
       Devfile devfile = devfileManager.parse(devfileYamlContent, false);
       WorkspaceConfigImpl wsConfig =
           devfileManager.createWorkspaceConfig(
@@ -113,10 +118,8 @@ public class URLFactoryBuilder {
           newDto(FactoryDto.class)
               .withV(CURRENT_VERSION)
               .withWorkspace(DtoConverter.asDto(wsConfig)));
-    } catch (DevfileFormatException | DevfileRecipeFormatException e) {
+    } catch (DevfileException | DevfileFormatException | DevfileRecipeFormatException e) {
       throw new BadRequestException(e.getMessage());
-    } catch (IOException x) {
-      throw new ServerException(x.getLocalizedMessage(), x);
     }
   }
 

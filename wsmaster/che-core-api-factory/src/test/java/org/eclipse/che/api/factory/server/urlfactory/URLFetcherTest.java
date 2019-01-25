@@ -42,13 +42,13 @@ public class URLFetcherTest {
 
   /** Check that when url is null, NPE is thrown */
   @Test(expectedExceptions = NullPointerException.class)
-  public void checkNullURL() {
+  public void checkNullURL() throws Exception {
     URLFetcher.fetch((String) null);
   }
 
   /** Check that when url exists the content is retrieved */
   @Test
-  public void checkGetContent() {
+  public void checkGetContent() throws Exception {
 
     // test to download this class object
     URL urlJson = getClass().getClassLoader().getResource(".che.json");
@@ -59,15 +59,17 @@ public class URLFetcherTest {
   }
 
   /** Check when url is invalid */
-  @Test
-  public void checkUrlFileIsInvalid() {
+  @Test(
+      expectedExceptions = IOException.class,
+      expectedExceptionsMessageRegExp = "no protocol: hello world")
+  public void checkUrlFileIsInvalid() throws Exception {
     String result = URLFetcher.fetch("hello world");
     assertNull(result);
   }
 
   /** Check Sanitizing of Git URL works */
   @Test
-  public void checkDotGitRemovedFromURL() {
+  public void checkDotGitRemovedFromURL() throws Exception {
     String result = URLFetcher.sanitized("https://github.com/acme/demo.git");
     assertEquals("https://github.com/acme/demo", result);
 
@@ -76,21 +78,22 @@ public class URLFetcherTest {
   }
 
   /** Check that when url doesn't exist */
-  @Test
-  public void checkMissingContent() {
+  @Test(
+      expectedExceptions = IOException.class,
+      expectedExceptionsMessageRegExp = ".* \\(No such file or directory\\)")
+  public void checkMissingContent() throws Exception {
 
     // test to download this class object
     URL urlJson = getClass().getClassLoader().getResource(".che.json");
     Assert.assertNotNull(urlJson);
 
     // add extra path to make url not found
-    String content = URLFetcher.fetch(urlJson.toString() + "-invalid");
-    assertNull(content);
+    URLFetcher.fetch(urlJson.toString() + "-invalid");
   }
 
   /** Check when we reach custom limit */
   @Test
-  public void checkPartialContent() {
+  public void checkPartialContent() throws Exception {
     URL urlJson = getClass().getClassLoader().getResource(".che.json");
     Assert.assertNotNull(urlJson);
 
